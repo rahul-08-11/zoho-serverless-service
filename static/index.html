@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Quote</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #eaeaea;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .quote-form {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 30px; /* Increased padding for more space */
+            width: 450px;  /* Increased width */
+            height: 400px; /* Increased height */
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .quote-form:hover {
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            color: #333333;
+            margin-bottom: 25px;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 90%;
+            padding: 10px;
+            margin-bottom: 20px; /* Ensure consistent spacing for all input fields */
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #d147a3;
+            box-shadow: 0 0 5px rgba(209, 71, 163, 0.3);
+        }
+
+        .range-input {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px; /* Ensure consistent space between sections */
+        }
+
+        .range-input input {
+            width: 42%;
+            margin-bottom: 0; /* Remove bottom margin from range inputs */
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #d147a3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #b1358c;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        label {
+            color: #555555;
+            font-size: 14px;
+            text-align: left;
+            display: block;
+            margin-bottom: 8px; /* Adjusted to provide consistent space */
+        }
+    </style>
+</head>
+
+<body data-carrierid="{{carrierID}}" data-jobid="{{jobID}}">
+    <div class="quote-form">
+        <h2>Create Quote : {{carriername}}</h2>
+        <label for="estimatedAmount">Estimated Amount:</label>
+        <input type="text" id="estimatedAmount" placeholder="Enter Estimated Amount">
+
+        <label for="estimatedPickup">Estimated Pickup (Days):</label>
+        <div class="range-input">
+            <input type="text" id="pickupMin" placeholder="Min (days)" />
+            <input type="text" id="pickupMax" placeholder="Max (days)" />
+        </div>
+
+        <label for="deliveryDate">Delivery Date (Days):</label>
+        <div class="range-input">
+            <input type="text" id="deliveryMin" placeholder="Min (days)" />
+            <input type="text" id="deliveryMax" placeholder="Max (days)" />
+        </div>
+
+        <button onclick="submitQuote()">Submit</button>
+    </div>
+
+    <script>
+        function submitQuote() {
+            const estimatedAmount = document.getElementById('estimatedAmount').value;
+            const pickupMin = document.getElementById('pickupMin').value;
+            const pickupMax = document.getElementById('pickupMax').value;
+            const deliveryMin = document.getElementById('deliveryMin').value;
+            const deliveryMax = document.getElementById('deliveryMax').value;
+
+            if (!estimatedAmount || !pickupMin || !pickupMax || !deliveryMin || !deliveryMax) {
+                alert("Please fill out all fields.");
+                return;
+            }
+            const carrierID = document.body.dataset.carrierid;
+            const jobID = document.body.dataset.jobid;
+            const data = {
+                estimatedAmount,
+                estimatedPickup: `${pickupMin} - ${pickupMax} Business Days`,
+                deliveryDate: `${deliveryMin} - ${deliveryMax} Business Days`,
+                carrierid: carrierID,
+                jobid: jobID,
+            };
+
+            // Send data to API
+            fetch("https://zoho-service.azurewebsites.net/api/create-quotes?", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.error || "Unknown error occurred");
+                    });
+                }
+                return response.json(); // Parse as JSON for success response
+            })
+            .then(data => {
+                if (data.message) {
+                    // If we receive a message, redirect to the URL provided
+                    window.opener.location.href = data.redirect_url; // Redirect parent window
+                    window.close(); // Close the current popup
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("There was an error submitting the quote: " + error.message);
+            });
+
+        }
+    </script>
+</body>
+
+</html>
